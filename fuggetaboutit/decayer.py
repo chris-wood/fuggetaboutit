@@ -2,7 +2,13 @@ import os
 import sys
 import random
 import time
-from bloom import *
+from scaling_timing_bloom_filter import ScalingTimingBloomFilter
+import tornado.ioloop
+import tornado.testing
+import time
+from utils import TimingBlock, TestFile
+
+# from bloom import *
 
 minimumTimeUnit = 1000 # milliseconds
 sequenceNumber = 1
@@ -46,7 +52,8 @@ def main(args):
     deleteRate = float(args[5]) # / minimumTimeUnit # per second
     randomSampleSize = int(args[6])
 
-    bf = CountingBloomFilter(filterSize, filterHashes)
+    # bf = ScalingTimingBloomFilter(filterSize, filterHashes)
+    stbf = ScalingTimingBloomFilter(500, decay_time=4, ioloop=self.io_loop).start()
 
     contents = []
     falsePositives = {}
@@ -70,7 +77,8 @@ def main(args):
             print "arriving... %d" % (arrivalCount - i)
             randomContent = generateNewContent()
             contents.append(randomContent)
-            bf.insert(randomContent)
+            # bf.insert(randomContent)
+            stbf += randomContent
         for i in range(deleteCount):
             print "deleting... %d" % (deleteCount - i)
             if len(contents) > 1:

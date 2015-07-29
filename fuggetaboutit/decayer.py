@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import math
 import time
 from scaling_timing_bloom_filter import ScalingTimingBloomFilter
 import tornado.ioloop
@@ -53,14 +54,14 @@ def main(args):
     randomSampleSize = int(args[6])
 
     # bf = ScalingTimingBloomFilter(filterSize, filterHashes)
-    stbf = ScalingTimingBloomFilter(500, decay_time=4, ioloop=self.io_loop).start()
+    stbf = ScalingTimingBloomFilter(500, decay_time=4).start()
 
     contents = []
     falsePositives = {}
     falseNegatives = {}
     counts = {}
 
-    decayCount = sampleExp(decayRate)
+    # decayCount = sampleExp(decayRate)
     deleteCount = sampleExp(deleteRate)
     arrivalCount = sampleExp(arrivalRate)
 
@@ -70,9 +71,9 @@ def main(args):
     for t in range(timeSteps):
         start = time.time()
         
-        for i in range(decayCount):
-            print "decaying..."
-            deleteFromFilter(bf)
+        # for i in range(decayCount):
+        #     print "decaying..."
+            # deleteFromFilter(bf)
         for i in range(arrivalCount):
             print "arriving... %d" % (arrivalCount - i)
             randomContent = generateNewContent()
@@ -86,7 +87,7 @@ def main(args):
                 # bf.delete(target)
                 # contents.remove(target)
 
-        decayCount = sampleExp(decayRate)
+        # decayCount = sampleExp(decayRate)
         arrivalCount = sampleExp(arrivalRate)
         deleteCount = sampleExp(deleteRate)
 
@@ -95,24 +96,22 @@ def main(args):
         falsePositives[t] = []
         falseNegatives[t] = []
 
-        print >> sys.stderr, "Computing false negative probability..."
+        # print >> sys.stderr, "Computing false negative probability..."
 
         # Check to see if decays deleted existing items from the filter
         for content in contents[:randomSampleSize]:
-            if not bf.contains(content):
+            if not stbf.contains(content):
                 falseNegatives[t].append(content)
 
-        print >> sys.stderr, "Computing false positive probability..."
+        # print >> sys.stderr, "Computing false positive probability..."
 
         # Check the false positive rate (by randomly generated samples)
         randomContents = generateRandomContent(randomSampleSize)
         for randomElement in randomContents:
             element = randomElement + "/" + str(os.urandom(10))
-            if element not in contents and bf.contains(element):
+            if element not in contents and stbf.contains(element):
                 print >> sys.stderr, "Found false positive :( %s" % (element)
                 falsePositives[t].append(element)
-            else:
-                print >> sys.stderr, "missed a false positive"
 
         end = time.time()
 

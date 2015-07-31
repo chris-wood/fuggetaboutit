@@ -21,6 +21,7 @@ class TimingBloomFilter(CountingBloomFilter):
         ioloop = kwargs.pop("ioloop", None)
         assert self.decay_time is not None, "Must provide decay_time parameter"
 
+        self.time = 0
         super(TimingBloomFilter, self).__init__(*args, **kwargs)
         self.ring_size = None
         self.dN = None
@@ -48,8 +49,11 @@ class TimingBloomFilter(CountingBloomFilter):
             pass
         self._callbacktimer = tornado.ioloop.PeriodicCallback(self.decay, self.time_per_decay, self._ioloop)
 
+    def step(self):
+        self.time = self.time + 1
+
     def _tick(self, timestamp=None):
-        return int(((timestamp or time.time()) // self.seconds_per_tick) % self.ring_size) + 1
+        return int((self.time // self.seconds_per_tick) % self.ring_size) + 1
 
     def _tick_range(self):
         tick_max = self._tick()
@@ -66,7 +70,7 @@ class TimingBloomFilter(CountingBloomFilter):
     def add(self, key, timestamp=None):
         tick = self._tick(timestamp)
         if timestamp:
-            if timestamp < time.time() - self.decay_time:
+            if timestamp < self.time - self.decay_time:
                 return self
         if self._optimize and self.data.flags['C_CONTIGUOUS']:
             self.num_non_zero += _optimizations.timing_bloom_add(self.data, self._indexes(key), tick)
@@ -136,7 +140,10 @@ class TimingBloomFilter(CountingBloomFilter):
         return self
 
     def remove(self, *args, **kwargs):
-        raise NotImplementedError
+        for index in self._indexes(key):
+            self.num_non_zero -= (self.data[index] == 0)
+            self.data[index] = tick
+        return self
 
     def remove_all(self, *args, **kwargs):
         raise NotImplementedError

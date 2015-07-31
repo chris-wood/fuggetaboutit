@@ -54,7 +54,9 @@ def main(args):
     randomSampleSize = int(args[6])
 
     # bf = ScalingTimingBloomFilter(filterSize, filterHashes)
-    stbf = ScalingTimingBloomFilter(500, decay_time=4).start()
+
+    ### Note: the decay time is real clock time, not simulated time
+    stbf = ScalingTimingBloomFilter(500, decay_time=100).start()
 
     contents = []
     falsePositives = {}
@@ -69,26 +71,28 @@ def main(args):
     # print arrivalCount, deleteCount, decayCount
 
     for t in range(timeSteps):
+        # print t
         start = time.time()
+        stbf.step()
         
         # for i in range(decayCount):
         #     print "decaying..."
             # deleteFromFilter(bf)
         for i in range(arrivalCount):
-            print "arriving... %d" % (arrivalCount - i)
+            # print "arriving... %d" % (arrivalCount - i)
             randomContent = generateNewContent()
             contents.append(randomContent)
             # bf.insert(randomContent)
             stbf += randomContent
         for i in range(deleteCount):
-            print "deleting... %d" % (deleteCount - i)
+            # print "deleting... %d" % (deleteCount - i)
             if len(contents) > 1:
                 target = random.sample(contents, 1)[0]
                 # bf.delete(target)
                 # contents.remove(target)
 
         # decayCount = sampleExp(decayRate)
-        arrivalCount = sampleExp(arrivalRate)
+        arrivalCount = sampleExp(arrivalRate) # number of arrivals in each tick
         deleteCount = sampleExp(deleteRate)
 
         # print arrivalCount, deleteCount, decayCount

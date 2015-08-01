@@ -131,6 +131,33 @@ def main(args):
         fn = float(len(falseNegatives[t])) / randomSampleSize
         print "%d,%f,%f,%d" % (t, fp, fn, counts[t])
 
+def test():
+    stbf = ScalingTimingBloomFilter(500, decay_time=4).start()
+    n = 100
+    for i in xrange(2*n):
+        stbf.add("idx_%d" % i)
+
+    for i in xrange(2*n):
+        if not stbf.contains("idx_%d" % i):
+            print "WTF 1 %d" %(i)
+
+    stbf.step()
+    stbf.step()
+    stbf.step()
+    # stbf.step()
+
+    for i in xrange(2*n):
+        if not stbf.contains("idx_%d" % i):
+            print "WTF 2 %d" %(i)
+
+    stbf.step()
+    for i in xrange(2*n):
+        if stbf.contains("idx_%d" % i):
+            print "WTF 3 %d" %(i)
+
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    if len(sys.argv) == 1:
+        test()
+    else:
+        main(sys.argv[1:])
 
